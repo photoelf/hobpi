@@ -13,7 +13,7 @@ database_id = "PLACEHOLDER-ЗАМЕНИТЬ-ПОСЛЕ-wrangler-d1-create"
 
 [vars]
 # Домен мини-аппа на GitHub Pages. Без него браузер зарежет запросы по CORS.
-ALLOWED_ORIGINS = ""
+ALLOWED_ORIGINS = "https://photoelf.github.io"
 
 # BOT_TOKEN кладётся секретом, не сюда:
 #   npx wrangler secret put BOT_TOKEN

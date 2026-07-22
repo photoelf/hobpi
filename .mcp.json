@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "botmother": {
+      "command": "node",
+      "args": ["D:/PETS/botMother/dist/mcp/server.js"]
+    }
+  }
+}
