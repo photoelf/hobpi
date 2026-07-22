@@ -1,7 +1,13 @@
 import { devUser, inTelegram, tg } from './tg.ts';
 import type { Action, BattleSetup, BattleState } from '@hobpi/engine';
 
-export class ApiError extends Error {}
+export class ApiError extends Error {
+  readonly status: number;
+  constructor(message: string, status = 0) {
+    super(message);
+    this.status = status;
+  }
+}
 
 /**
  * Куда стучаться за API.
@@ -29,7 +35,7 @@ async function request<T>(method: 'GET' | 'POST', path: string, body?: unknown):
   });
   const text = await res.text();
   const data = text ? JSON.parse(text) : {};
-  if (!res.ok) throw new ApiError(data.error ?? `Ошибка ${res.status}`);
+  if (!res.ok) throw new ApiError(data.error ?? `Ошибка ${res.status}`, res.status);
   return data as T;
 }
 

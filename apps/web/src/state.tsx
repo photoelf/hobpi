@@ -14,6 +14,8 @@ interface Ctx {
   registered: boolean;
   /** сервер не отвечает — показываем отдельный экран, а не сломанный онбординг */
   offline: boolean;
+  /** сервер не признал нас: игру открыли не через Telegram */
+  unauthorized: boolean;
   suggestedName: string;
   setState: (s: GameState) => void;
   refresh: () => void;
@@ -31,6 +33,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const [suggestedName, setSuggestedName] = useState('Пацан');
   const [loading, setLoading] = useState(true);
   const [offline, setOffline] = useState(false);
+  const [unauthorized, setUnauthorized] = useState(false);
   const [toast, setToast] = useState<Toast | null>(null);
 
   const say = useCallback((text: string, ok = false) => {
@@ -42,6 +45,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const refresh = useCallback(async () => {
     const me = await api.me();
     setOffline(false);
+    setUnauthorized(false);
     setRegistered(me.registered);
     if (me.suggestedName) setSuggestedName(me.suggestedName);
     if (me.state) setState(me.state);
@@ -52,7 +56,8 @@ export function GameProvider({ children }: { children: ReactNode }) {
     refresh()
       .catch((e) => {
         // ApiError = сервер ответил и объяснил; всё прочее = до сервера не достучались
-        if (e instanceof ApiError) say(e.message);
+        if (e instanceof ApiError && e.status === 401) setUnauthorized(true);
+        else if (e instanceof ApiError) say(e.message);
         else setOffline(true);
       })
       .finally(() => setLoading(false));
@@ -80,11 +85,11 @@ export function GameProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo<Ctx>(
     () => ({
-      state, loading, registered, offline, suggestedName,
+      state, loading, registered, offline, unauthorized, suggestedName,
       setState: (s) => { setState(s); setRegistered(true); },
       refresh: boot, run, toast, say,
     }),
-    [state, loading, registered, offline, suggestedName, boot, run, toast, say],
+    [state, loading, registered, offline, unauthorized, suggestedName, boot, run, toast, say],
   );
 
   return <GameCtx.Provider value={value}>{children}</GameCtx.Provider>;

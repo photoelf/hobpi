@@ -135,12 +135,18 @@ POST /battle/act {battleId, action}
 
 Telegram требует для мини-аппа HTTPS с валидным сертификатом. Поддерживаются две схемы.
 
-### Схема A: GitHub Pages (фронт) + отдельный API — выбрана для прототипа
+### Схема A: GitHub Pages (фронт) + Cloudflare Worker (API) — развёрнуто
 
 ```
-GitHub Pages          →  apps/web/dist   (статика, бесплатно, HTTPS из коробки)
-Любой Node-хост       →  apps/api        (Fly.io / Railway / Render / VPS)
+https://photoelf.github.io/hobpi/        →  apps/web/dist  (GitHub Pages)
+https://hobpi-api.photoelf.workers.dev   →  apps/api       (Cloudflare Worker + D1)
+Бот: @bandy_spb_bot
 ```
+
+Почему Workers, а не Render/Fly: на бесплатных тарифах контейнер засыпает после
+15 минут простоя, и первый заход в мини-апп упирается в 30–50 секунд холодного
+старта — для игры с трёхминутными сессиями это убивает возвраты. Workers не спят,
+а D1 — тот же SQLite, что и локально, поэтому `schema.sql` общий.
 
 **Почему нельзя всё на Pages.** Pages отдаёт только статические файлы — там не может
 работать ни Node, ни база. Без сервера пропадает ровно то, ради чего игра затевалась:
@@ -159,6 +165,7 @@ GitHub Pages          →  apps/web/dist   (статика, бесплатно, 
 2. `Settings → Variables → Actions → API_URL` = адрес сервера, например `https://hobpi-api.fly.dev`.
    Без неё сборка падает намеренно — молча выкатить неработающий фронт хуже, чем не выкатить.
 3. На хосте API задать `ALLOWED_ORIGINS=https://<user>.github.io` — иначе браузер зарежет CORS.
+   (в `apps/api/wrangler.toml` уже прописано)
 4. Базовый путь `/<repo>/` подставляется автоматически (`VITE_BASE`), SPA-фолбэк — через `404.html`.
 5. В BotFather указать URL мини-аппа: `https://<user>.github.io/<repo>/`.
 
