@@ -1,0 +1,21 @@
+{
+  "name": "@hobpi/api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node --watch src/server.ts",
+    "start": "node src/server.ts",
+    "dev:worker": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "db:create": "wrangler d1 create hobpi",
+    "db:migrate": "wrangler d1 execute hobpi --file=schema.sql --remote",
+    "db:migrate:local": "wrangler d1 execute hobpi --file=schema.sql --local"
+  },
+  "dependencies": {
+    "@hobpi/engine": "*"
+  },
+  "devDependencies": {
+    "wrangler": "^4.113.0"
+  }
+}

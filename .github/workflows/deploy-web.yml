@@ -1,0 +1,64 @@
+name: Deploy mini app to GitHub Pages
+
+# GitHub Pages раздаёт только статику — здесь публикуется ТОЛЬКО мини-апп.
+# API (apps/api) должен работать отдельно, его адрес задаётся переменной VITE_API_URL.
+# Настройка: Settings → Pages → Source: GitHub Actions
+#            Settings → Variables → Actions → New variable: API_URL = https://ваш-api-домен
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      - name: Проверка типов и тесты
+        run: npm run typecheck && npm test
+
+      - name: Сборка мини-аппа
+        env:
+          VITE_BASE: /${{ github.event.repository.name }}/
+          VITE_API_URL: ${{ vars.API_URL }}
+        run: |
+          if [ -z "$VITE_API_URL" ]; then
+            echo "::error::Не задана переменная API_URL (Settings → Variables → Actions)."
+            echo "::error::Без неё мини-апп не найдёт сервер: ни PvP, ни сохранений не будет."
+            exit 1
+          fi
+          npm run build -w @hobpi/web
+          # Pages не отдаёт index.html на неизвестных путях — SPA-фолбэк
+          cp apps/web/dist/index.html apps/web/dist/404.html
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: apps/web/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - id: deploy
+        uses: actions/deploy-pages@v4

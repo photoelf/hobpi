@@ -1,0 +1,19 @@
+name = "hobpi-api"
+main = "src/worker.ts"
+compatibility_date = "2026-07-01"
+compatibility_flags = ["nodejs_compat"]
+
+# Создать базу:  npx wrangler d1 create hobpi
+# затем вставить выданный database_id сюда и применить схему:
+#   npx wrangler d1 execute hobpi --file=schema.sql --remote
+[[d1_databases]]
+binding = "DB"
+database_name = "hobpi"
+database_id = "PLACEHOLDER-ЗАМЕНИТЬ-ПОСЛЕ-wrangler-d1-create"
+
+[vars]
+# Домен мини-аппа на GitHub Pages. Без него браузер зарежет запросы по CORS.
+ALLOWED_ORIGINS = ""
+
+# BOT_TOKEN кладётся секретом, не сюда:
+#   npx wrangler secret put BOT_TOKEN

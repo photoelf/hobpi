@@ -1,0 +1,34 @@
+{
+  "name": "hobpi",
+  "private": true,
+  "version": "0.1.0",
+  "description": "HoBPI — Heroes of Bandit Petersburg Inc. Telegram Mini App: пошаговая тактика в духе HoMM3 в сеттинге бандитского Петербурга",
+  "type": "module",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "concurrently -n api,web -c yellow,cyan \"npm run dev -w @hobpi/api\" \"npm run dev -w @hobpi/web\"",
+    "dev:api": "npm run dev -w @hobpi/api",
+    "dev:web": "npm run dev -w @hobpi/web",
+    "build": "npm run build -w @hobpi/web",
+    "test": "node --test packages/engine/test/*.test.ts apps/api/test/*.test.ts",
+    "test:engine": "node --test packages/engine/test/*.test.ts",
+    "test:api": "node --test apps/api/test/*.test.ts",
+    "typecheck": "tsc -p packages/engine/tsconfig.json && tsc -p apps/api/tsconfig.json && tsc -p apps/web/tsconfig.json",
+    "balance": "node tools/balance.ts",
+    "autotune": "node tools/autotune.ts",
+    "test:ui": "npm run build -w @hobpi/web && node tools/ui-smoke.ts",
+    "verify": "npm run typecheck && npm test && npm run test:ui"
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.1",
+    "concurrently": "^9.1.2",
+    "jsdom": "^29.1.1",
+    "typescript": "^5.7.3"
+  },
+  "engines": {
+    "node": ">=22.5.0"
+  }
+}
