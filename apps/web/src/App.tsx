@@ -34,7 +34,7 @@ interface ActiveBattle {
 }
 
 export function App() {
-  const { loading, registered, toast, state, refresh } = useGame();
+  const { loading, registered, offline, toast, state, refresh } = useGame();
   const [tab, setTab] = useState<Tab>('base');
   const [heroOpen, setHeroOpen] = useState(false);
   const [battle, setBattle] = useState<ActiveBattle | null>(null);
@@ -62,6 +62,21 @@ export function App() {
 
   if (loading) {
     return <div className="center dim">Заводим мерина…</div>;
+  }
+
+  if (offline) {
+    return (
+      <div className="center">
+        <div>
+          <div style={{ fontSize: 40 }}>📵</div>
+          <h1 style={{ marginTop: 10 }}>Связи нет</h1>
+          <div className="dim small" style={{ margin: '8px 0 16px' }}>
+            Сервер не отвечает. Бывает — попробуй ещё раз через минуту.
+          </div>
+          <button className="btn primary" onClick={() => void refresh()}>Повторить</button>
+        </div>
+      </div>
+    );
   }
 
   if (!registered) {

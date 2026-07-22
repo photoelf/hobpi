@@ -1,5 +1,7 @@
 # HoBPI — «Банды Петербурга»
 
+**Мини-апп:** https://photoelf.github.io/hobpi/ · **API:** Cloudflare Worker `hobpi-api`
+
 Пошаговая тактика в духе **Heroes of Might & Magic III**, перенесённая в
 криминально-сатирический Петербург 90-х, с асинхронным PvP между Telegram-аккаунтами
 в духе старого «Бойцовского клуба». Мобайл-фёрст Telegram Mini App.
@@ -69,18 +71,32 @@ tools/              balance.ts, autotune.ts — балансировка; ui-smo
 Telegram требует HTTPS. Есть две схемы — подробности в
 [07-architecture.md §7](docs/07-architecture.md).
 
-### GitHub Pages + отдельный API (выбрано для прототипа)
+### GitHub Pages (фронт) + Cloudflare Worker (API) — текущая схема
 
 Pages отдаёт только статику, поэтому там живёт **только мини-апп**. API нужен отдельно:
 без него нет ни PvP между аккаунтами, ни рейтинга, ни сохранений, ни защиты от накрутки.
 
-1. `Settings → Pages → Source: GitHub Actions` — воркфлоу уже в репозитории.
-2. `Settings → Variables → Actions → API_URL` = адрес сервера.
-   Не задана — сборка падает намеренно, чтобы не выкатить неработающий фронт.
-3. На хосте API: `ALLOWED_ORIGINS=https://<user>.github.io`.
-4. В BotFather указать `https://<user>.github.io/<repo>/`.
+Фронт публикуется сам при пуше в `main` (`.github/workflows/deploy-web.yml`),
+адрес API берётся из переменной репозитория `API_URL`.
 
-### Один процесс
+Первый деплой API:
+
+```bash
+npx wrangler login                       # интерактивно, один раз
+cd apps/api
+npx wrangler d1 create hobpi             # id из вывода вписать в wrangler.toml
+npx wrangler d1 execute hobpi --file=schema.sql --remote
+npx wrangler secret put BOT_TOKEN        # токен бота от BotFather
+npx wrangler deploy
+```
+
+Дальше обновления — просто `npm run deploy -w @hobpi/api`.
+
+Почему Workers, а не Render: на бесплатном тарифе Render контейнер засыпает
+после 15 минут простоя, и первый заход в мини-апп упирается в 30–50 секунд
+холодного старта. Workers не спят, а D1 — тот же SQLite, что и локально.
+
+### Один процесс (альтернатива, нужна VPS)
 
 ```bash
 npm run build

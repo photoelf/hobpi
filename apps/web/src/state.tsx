@@ -12,9 +12,11 @@ interface Ctx {
   state: GameState | null;
   loading: boolean;
   registered: boolean;
+  /** сервер не отвечает — показываем отдельный экран, а не сломанный онбординг */
+  offline: boolean;
   suggestedName: string;
   setState: (s: GameState) => void;
-  refresh: () => Promise<void>;
+  refresh: () => void;
   /** Обёртка вызова API: показывает ошибку тостом и не роняет экран. */
   run: <T>(fn: () => Promise<T>, okText?: string) => Promise<T | null>;
   toast: Toast | null;
@@ -28,6 +30,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const [registered, setRegistered] = useState(false);
   const [suggestedName, setSuggestedName] = useState('Пацан');
   const [loading, setLoading] = useState(true);
+  const [offline, setOffline] = useState(false);
   const [toast, setToast] = useState<Toast | null>(null);
 
   const say = useCallback((text: string, ok = false) => {
@@ -38,16 +41,24 @@ export function GameProvider({ children }: { children: ReactNode }) {
 
   const refresh = useCallback(async () => {
     const me = await api.me();
+    setOffline(false);
     setRegistered(me.registered);
     if (me.suggestedName) setSuggestedName(me.suggestedName);
     if (me.state) setState(me.state);
   }, []);
 
-  useEffect(() => {
+  const boot = useCallback(() => {
+    setLoading(true);
     refresh()
-      .catch((e) => say(e instanceof ApiError ? e.message : 'Сервер недоступен'))
+      .catch((e) => {
+        // ApiError = сервер ответил и объяснил; всё прочее = до сервера не достучались
+        if (e instanceof ApiError) say(e.message);
+        else setOffline(true);
+      })
       .finally(() => setLoading(false));
   }, [refresh, say]);
+
+  useEffect(boot, [boot]);
 
   const run = useCallback(
     async <T,>(fn: () => Promise<T>, okText?: string): Promise<T | null> => {
@@ -69,11 +80,11 @@ export function GameProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo<Ctx>(
     () => ({
-      state, loading, registered, suggestedName,
+      state, loading, registered, offline, suggestedName,
       setState: (s) => { setState(s); setRegistered(true); },
-      refresh, run, toast, say,
+      refresh: boot, run, toast, say,
     }),
-    [state, loading, registered, suggestedName, refresh, run, toast, say],
+    [state, loading, registered, offline, suggestedName, boot, run, toast, say],
   );
 
   return <GameCtx.Provider value={value}>{children}</GameCtx.Provider>;
