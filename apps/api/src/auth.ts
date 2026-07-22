@@ -50,12 +50,15 @@ export async function verifyInitData(initData: string, botToken: string): Promis
   const params = new URLSearchParams(initData);
   const hash = params.get('hash');
   if (!hash) return null;
+
+  // Из строки проверки исключается ТОЛЬКО hash. Поле signature (оно нужно для
+  // сторонней Ed25519-проверки) в подсчёт входит — если его выбросить, подпись
+  // не сойдётся ни для одного реального initData.
   params.delete('hash');
-  params.delete('signature');
 
   const checkString = [...params.entries()]
-    .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
     .map(([k, v]) => `${k}=${v}`)
+    .sort()
     .join('\n');
 
   const secret = await hmac(enc.encode('WebAppData'), botToken);
